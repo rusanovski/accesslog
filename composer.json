@@ -1,0 +1,14 @@
+{
+    "name": "roistat-test/roistat-test",
+    "description": "Makes data analyzing of access_log file",
+    "type": "command",
+    "require": {
+        "predis/predis": "1.1.*"
+    },
+    "authors": [
+        {
+            "name": "Artyom Rusanov",
+            "email": "arn.nous@gmail.com"
+        }
+    ]
+}
