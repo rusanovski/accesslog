@@ -14,8 +14,15 @@ class AccessLog {
             'password' => 'password',
             'database' => 10
         ],
+
         'access_log_regex' => "/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})[\s\S]+([0-9]{3})[\s\S]*\s([0-9]+|-)\s\"([\S]+)\"\s\"([\S\s]+)\"/",
         'access_log_entries' => [null, 'ip', 'status', 'size', 'url', 'useragent'],
+
+        'crawlers' => [
+            'google' => 'Googlebot',
+            'yandex' => 'YandexBot',
+            'bing' => 'bingbot',
+        ],
     ];
 
     private $redis = null;
@@ -65,13 +72,10 @@ class AccessLog {
 
             // User-Agent.
             } elseif ($entry_name === 'useragent') {
-                if (preg_match("/Googlebot/", $matches[$pos]))
-                    $this->data['crawlers']['google']++;
-                elseif (preg_match("/YandexBot/", $matches[$pos]))
-                    $this->data['crawlers']['yandex']++;
-                elseif (preg_match("/bingbot/", $matches[$pos]))
-                    $this->data['crawlers']['bing']++;
-
+                foreach ($this->config['crawlers'] as $crawler => $agent)
+                    if (strpos($matches[$pos], $agent) !== false) {
+                        $this->data['crawlers'][$crawler]++; break;
+                    }
             }
         }
 
@@ -95,7 +99,7 @@ class AccessLog {
         if (preg_match($this->config['access_log_regex'], $line, $matches))
             $this->processEntries($matches);
 
-        if ($this->i === 0) usleep(100);
+        // if ($this->i === 0) usleep(100);
         $this->data['lines_count']++; $this->i++;
     }
 
