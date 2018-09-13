@@ -1,6 +1,7 @@
 <?php
 
 declare(ticks = 1);
+
 require_once 'vendor/autoload.php';
 
 class AccessLog {
@@ -19,9 +20,10 @@ class AccessLog {
 
     private $redis = null;
     private $tick = 10000;
-    private $i = 0;
+    private $i = 1;
     private $j = 0;
     private $c = '.';
+    public $ob = false;
 
     public function __construct() {
         $this->redis = new Predis\Client($this->config['redis']);
@@ -75,16 +77,20 @@ class AccessLog {
 
     }
 
-    public function readLine($line) {
+    private function displayProgress() {
         if ($this->i > $this->tick) $this->i = 0;
         if ($this->i === 0) {
             ob_implicit_flush(); echo $this->c;
-            $this->j++;
+            $this->j++; $this->ob = true;
         }
         if ($this->j >= 3) {
             $this->c = ['.', '#', '@'][mt_rand(0, 2)];
             echo " Please wait...\r"; $this->j = 0;
         }
+    }
+
+    public function readLine($line) {
+        $this->displayProgress();
 
         if (preg_match($this->config['access_log_regex'], $line, $matches))
             $this->processEntries($matches);
@@ -99,26 +105,39 @@ class AccessLog {
 
 }
 
+$handle = null;
 $access_log = new AccessLog;
 
-function sigint() {
-    echo "Have a signal";
+// Clear redis data and close file on CTRL+C.
+function sigint_handler() {
+    global $access_log, $handle;
+
+    $access_log->clear();
+    if ($handle) fclose($handle);
+
+    sleep(1);
+    echo "\r                  \rBye!". PHP_EOL;
     exit;
+
 }
-pcntl_signal(SIGINT, 'sigint');
+pcntl_signal(SIGINT, "sigint_handler");
+
 
 if ($argv[1] && file_exists($argv[1])) {
 
     $handle = fopen($argv[1], "r");
     if ($handle) {
-        $matches = [];
+
+        // Read line.
         while (($line = fgets($handle)) !== false) {
             $regex = "";
             $access_log->readLine($line);
         }
 
         // Display result.
-        echo PHP_EOL. PHP_EOL. json_encode($access_log->data). PHP_EOL;
+        if ($access_log->ob) echo "\r                  \r";
+        else echo PHP_EOL;
+        echo json_encode($access_log->data). PHP_EOL;
 
         $access_log->clear();
         fclose($handle);
