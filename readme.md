@@ -21,3 +21,6 @@ Before use run `composer install` <br><br>
 `php read_access_log.php access_log_huge` 2456997 lines <br>
 
 You can download `access_log_huge` [here](http://nousband.ru/misc/access_log_huge)
+
+## Screenshot
+<img src="https://github.com/rusanovski/accesslog/raw/master/screenshot.png" width="640" />
